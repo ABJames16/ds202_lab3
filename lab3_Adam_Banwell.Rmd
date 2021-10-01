@@ -1,0 +1,117 @@
+---
+title: "lab3_Adam_Banwell"
+author: "Adam Banwell"
+date: "9/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Commands
+
+## Part one: Extracting and loading data
+#Use ggplot2 to create the plots, and dplyr to manipulate the data frame
+```{r}
+library(dplyr)
+library(ggplot2)
+data <- readxl::read_xls('C:/Users/abanwell.DESKTOP-RUCAQHC/Desktop/ds202/ds202_lab3/GSS.xls')
+data
+```
+
+## Part two: Exploration
+
+#Question 1
+
+#Find the average years of education for the respondents with each marital status. Arrange your output in a meaningful order and print. Describe any patterns you find.
+```{r}
+#remove no answers and convert character string to int for mean calculation
+averageYears = data %>% filter(!is.na(as.numeric(Highest_year_of_school_completed)))
+averageYears = averageYears[!(averageYears$Marital_status=="No answer"),]
+averageYears$Highest_year_of_school_completed = as.integer(averageYears$Highest_year_of_school_completed)
+
+group_by(averageYears, Marital_status) %>% summarise('average years of education' = mean(Highest_year_of_school_completed))
+
+
+```
+
+After removing the marital status "no answer" it can be seen that people who never married had the highest average years of education. The people with the lowest average years were unfortunately widowed.
+
+#Question 2
+
+#Create a single data frame containing records for the better educated respondents with each marital status. A “better educated” respondent is someone who has strictly more years of education than the average among those with the same marital status. Print the structure of the data frame.
+```{r}
+d = data %>% filter(!is.na(as.numeric(Highest_year_of_school_completed)))
+d = d[!(d$Marital_status=="No answer"),]
+d$Highest_year_of_school_completed = as.integer(d$Highest_year_of_school_completed)
+
+#remove any rows for specified marital status with years completed less than average for that category
+d = d[!(d$Marital_status=='Divorced' & d$Highest_year_of_school_completed<=13.1),]
+d = d[!(d$Marital_status=='Married' & d$Highest_year_of_school_completed<=13.0),]
+d = d[!(d$Marital_status=='Never married' & d$Highest_year_of_school_completed<=13.4),]
+d = d[!(d$Marital_status=='Separated' & d$Highest_year_of_school_completed<=11.9),]
+d = d[!(d$Marital_status=='Widowed' & d$Highest_year_of_school_completed<=11.2),]
+d
+```
+
+
+
+
+#Question 3
+
+#How is the happiness of a respondent related to his/her marriage status? Define that a person is happy if the response to question is “Very happy” or “Pretty happy”.
+```{r}
+happiness = data %>% select(Marital_status, General_happiness)
+happiness = happiness[!(happiness$General_happiness=="No answer"),]
+happiness = happiness[!(happiness$Marital_status=="No answer"),]
+
+#numerical summary
+happiness %>% count(Marital_status, General_happiness, sort = TRUE)%>% print(n=35)
+
+#appropriate visualization
+ggplot(happiness, aes(x=Marital_status, fill=General_happiness))+geom_bar(position = position_dodge())
+
+```
+
+Since a person is defined as happy for very and pretty happy, the graph above shows that the highest happiness comes from married respondents. Never married and Divorced are 2nd and 3rd respectively on the happiness scale. Widowed and finally separated are the lowest on the happiness scale. I used marital status and general happiness as my variables for this. The marital status separated the columns and the bars showing the count for each category of response.
+
+#Question 4
+
+#Does party affiliation affect the relationship you found in the last question?
+```{r}
+partyAff = data %>% select(Marital_status, General_happiness, Political_party_affiliation)
+partyAff = partyAff[!(partyAff$General_happiness=="No answer"),]
+partyAff = partyAff[!(partyAff$Marital_status=="No answer"),]
+partyAff = partyAff[!(partyAff$Political_party_affiliation=="No answer"),]
+
+#numerical summary
+partyAff %>% count(Marital_status, General_happiness, Political_party_affiliation, sort = TRUE)%>% print(n=35)
+
+#appropriate visualization
+ggplot(partyAff, aes(x=Marital_status, fill=General_happiness))+geom_bar(position = position_dodge())+facet_wrap(~Political_party_affiliation)
+
+```
+
+The above graph shows the relationship in question 3 spread out depending on the respondents party affiliation. Using the graph I noticed that 3 categories seemingly stand out. It seems "Not str democrat" and "Not str republican" are the highest on the scale of happiness. The highest happiness being the difference in counts from the blue and purple to the green shown on the graph. The lowest seeming to be "Ind,near rep", other party, and strong republican. The variables I used to show this graph were the same as question three but including political party affiliation to wrap and split the relationship up depending on the newly added variable categories.
+
+#Question 5
+
+#Explore an interesting question (not covered by the previous questions), and answer the question using the GSS data.
+```{r}
+#For this Question I will explore if the respondents sex changes how happy a respondent is compared to their marital status.
+
+respondentSex = data %>% select(Marital_status, General_happiness, Respondents_sex)
+respondentSex = respondentSex[!(respondentSex$General_happiness=="No answer"),]
+respondentSex = respondentSex[!(respondentSex$Marital_status=="No answer"),]
+respondentSex = respondentSex[!(respondentSex$Respondents_sex=="No answer"),]
+
+#numerical summary
+respondentSex %>% count(Marital_status, General_happiness, Respondents_sex, sort = TRUE)%>% print(n=48)
+
+#appropriate visualization
+ggplot(respondentSex, aes(x=Marital_status, fill=General_happiness))+geom_bar(position = position_dodge())+facet_wrap(~Respondents_sex)
+
+```
+
+The graph above shows that female's tend to be a bit happier in categories such as divorced, married, and widowed. Male's seem to be a bit happier then females when never married. There also seems to be very little separated status responses but females tend to be happier in that response as well. The variables I used to show this include the same variables from question 3 and 4 but replacing the comparing variable to the relationship with a the respondent sex in order to compare effectively.
